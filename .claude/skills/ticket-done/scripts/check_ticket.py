@@ -2,7 +2,7 @@
 """Mechanical checks for a ticket that is about to be marked done.
 
 Usage (from the repo root):
-    python .claude/skills/ticket-done/scripts/check_ticket.py PA-001
+    python3 .claude/skills/ticket-done/scripts/check_ticket.py PA-001
 
 Checks only what a script can check more reliably than a reader:
 frontmatter shape, unticked acceptance criteria, git traceability,
@@ -64,7 +64,7 @@ def fail_hard(message: str) -> None:
 
 def main() -> int:
     if len(sys.argv) != 2:
-        fail_hard("usage: python .claude/skills/ticket-done/scripts/check_ticket.py <TICKET-ID>")
+        fail_hard("usage: python3 .claude/skills/ticket-done/scripts/check_ticket.py <TICKET-ID>")
 
     ticket_id = sys.argv[1]
     path = find_ticket(ticket_id)

@@ -104,7 +104,7 @@ Run the checker bundled with this skill. It lives in `scripts/check_ticket.py`
 skill's path, and run it with the repo root as the working directory:
 
 ```
-python .claude/skills/ticket-done/scripts/check_ticket.py PA-001
+python3 .claude/skills/ticket-done/scripts/check_ticket.py PA-001
 ```
 
 It verifies what a script can verify better than you can: that all criteria checkboxes
