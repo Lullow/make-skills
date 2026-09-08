@@ -85,7 +85,12 @@ expected to find at least one problem. Look specifically at:
 Say what you found. "Nothing" is a legitimate result only if you can name what you
 looked for.
 
-## 6. Commit
+## 6. Update the ticket, then commit
+
+Tick the criteria checkboxes and set `status: done` in the ticket frontmatter *before*
+committing, so the ticket's own state lands in the same commit as the work it describes.
+The check in step 7 requires a clean working tree, so a ticket updated afterwards would
+leave it permanently failing.
 
 One commit per logical change. The message starts with the ticket ID:
 
@@ -109,9 +114,10 @@ python3 .claude/skills/ticket-done/scripts/check_ticket.py PA-001
 
 It verifies what a script can verify better than you can: that all criteria checkboxes
 are ticked, that the frontmatter is well formed, that at least one commit references the
-ID, and that the working tree is clean. Fix anything it reports and re-run.
-
-Then tick the criteria checkboxes and set `status: done` in the ticket frontmatter.
+ID, and that the working tree is clean. Fix anything it reports and amend the commit,
+then re-run. It runs after the commit rather than before because two of the four things
+it checks — the referencing commit and the clean tree — cannot exist until you have
+committed.
 
 ## 8. Report, and stop
 
