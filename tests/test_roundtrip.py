@@ -21,6 +21,7 @@ ROOT = Path(__file__).resolve().parent.parent
 NEW_TICKET = ROOT / ".claude/skills/write-ticket/scripts/new_ticket.py"
 CHECK_TICKET = ROOT / ".claude/skills/ticket-done/scripts/check_ticket.py"
 CHECK_SPEC = ROOT / ".claude/skills/spec-align/scripts/check_spec.py"
+NEW_HANDOFF = ROOT / ".claude/skills/session-handover/scripts/new_handoff.py"
 
 SPEC = """---
 name: {name}
@@ -156,6 +157,24 @@ def main() -> int:
         check("prefix inferred and ID incremented",
               (repo / "docs/tickets/PA-002-second-thing.md").is_file())
 
+        print("10. handoff reports the state the other two skills produced")
+        out = repo / "handoff.md"
+        result = run([sys.executable, str(NEW_HANDOFF), "--title", "Test session",
+                      "--out", str(out)], repo)
+        check("exits zero", result.returncode == 0, result.stdout + result.stderr)
+        text = out.read_text(encoding="utf-8") if out.is_file() else ""
+        check("records the committed ticket as done",
+              "**done** — " in text and "PA-001" in text, text)
+        check("records the new ticket as open",
+              "**open** — " in text and "PA-002" in text, text)
+        check("flags the draft spec as blocking ticket creation",
+              "block ticket creation" in text and "docs/specs/draft.md" in text, text)
+        check("does not flag the agreed spec",
+              "docs/specs/agreed.md" not in text, text)
+        check("reports the dirty working tree", "untracked" in text or "changed" in text, text)
+        check("leaves every judgement section as a placeholder",
+              "placeholders: 5" in result.stdout, result.stdout)
+
     return report()
 
 
@@ -166,7 +185,7 @@ def report() -> int:
         for item in failures:
             print(f"  - {item}")
         return 1
-    print("PASS — spec-align, write-ticket and ticket-done agree on both formats")
+    print("PASS — all four skills agree on both file formats")
     return 0
 
 
