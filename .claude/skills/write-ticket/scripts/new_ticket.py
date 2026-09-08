@@ -31,6 +31,24 @@ def fail(message: str) -> None:
     sys.exit(1)
 
 
+def spec_status(path: Path) -> str:
+    """The spec's declared status, or "" when it declares none.
+
+    Absence of a claim is not the same as a claim of draft status: a spec with
+    no frontmatter carries no evidence either way, so it is noted and allowed.
+    A spec that says it is still a draft is believed and refused.
+    """
+    text = path.read_text(encoding="utf-8")
+    if not text.startswith("---"):
+        return ""
+    end = text.find("\n---", 3)
+    for line in text[3:end if end != -1 else len(text)].splitlines():
+        line = line.split("#", 1)[0].strip()
+        if line.startswith("status:"):
+            return line.split(":", 1)[1].strip()
+    return ""
+
+
 def slugify(title: str) -> str:
     slug = re.sub(r"[^a-z0-9]+", "-", title.lower()).strip("-")
     return slug[:50].rstrip("-") or "untitled"
@@ -93,6 +111,13 @@ def main() -> int:
     spec = args.spec.strip()
     if not Path(spec).is_file():
         fail(f"spec does not exist: {spec} — write the spec before the ticket")
+
+    status = spec_status(Path(spec))
+    if status and status != "agreed":
+        fail(f"spec status is {status!r}, not 'agreed' — settle the spec before writing tickets "
+             f"against it (see the spec-align skill)")
+    if not status:
+        print(f"note: {spec} declares no status — no evidence it has been agreed")
 
     title = args.title.strip()
     if "#" in title:
