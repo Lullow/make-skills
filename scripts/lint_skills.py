@@ -13,6 +13,12 @@ trains people to stop reading the output.
     R3  a description with no "Use ..." clause, so the skill under-triggers
     R4  a runnable command naming a .py path that does not resolve from the repo root
     R5  a runnable command invoking bare `python`, which is absent on some machines
+    R6  a bundled script no fenced command in its own SKILL.md ever invokes
+
+R6 is the one rule here with no scar behind it. It is admitted because the decision it
+would otherwise fail — "every rule must come from a real defect" — was a proxy for
+quietness, and this rule is provably quiet: it fires on nothing in the current tree.
+A name beginning with `_` is exempt, marking a helper meant to be imported, not run.
 
 R4 and R5 inspect one thing only: lines inside a fenced code block that invoke an
 interpreter. Two narrower scopes than the obvious ones, both because the obvious one
@@ -106,6 +112,7 @@ def lint_skill(directory: Path):
             f"a skill that never fires is worse than no skill"
         )
 
+    invoked = set()
     for number, line in code_lines(text):
         if BARE_PYTHON.search(line):
             failures.append(
@@ -115,16 +122,27 @@ def lint_skill(directory: Path):
         if not INVOCATION.search(line):
             continue
         for path in PY_PATH.findall(line):
+            invoked.add(Path(path).resolve())
             if not Path(path).exists():
                 failures.append(
                     f"{skill_file}:{number}: runnable command names {path!r}, which does not "
                     f"resolve from the repo root"
                 )
 
-    scripts = sorted(p.name for p in (directory / "scripts").glob("*.py")) \
+    bundled = sorted((directory / "scripts").glob("*.py")) \
         if (directory / "scripts").is_dir() else []
+    for script in bundled:
+        if script.name.startswith("_"):
+            continue
+        if script.resolve() not in invoked:
+            failures.append(
+                f"{script}: bundled, but no command in {skill_file.name} invokes it — a script "
+                f"the skill never runs is dead weight the next reader has to account for"
+            )
+
+    names = [script.name for script in bundled]
     summary = f"{directory.name:<18} {len(text.splitlines()):>4} lines" \
-              f"{'  + ' + ', '.join(scripts) if scripts else ''}"
+              f"{'  + ' + ', '.join(names) if names else ''}"
     return failures, summary
 
 

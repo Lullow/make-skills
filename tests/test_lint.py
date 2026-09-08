@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Tests for scripts/lint_skills.py, one per acceptance criterion in ML-001.
+"""Tests for scripts/lint_skills.py, one per acceptance criterion in ML-001 and ML-002.
 
 The last two cases are regression guards, not criteria: the first live run of the
 linter flagged a filename inside an illustrative example and every SKILL.md that
@@ -44,11 +44,13 @@ def check(label: str, condition: bool, detail: str = "") -> None:
 
 def make_skill(root: Path, directory: str, *, name=None, description=GOOD_DESCRIPTION,
                command="python3 .claude/skills/demo/scripts/tool.py", prose="Prose.",
-               bundle=True, skill_file=True):
+               bundle=True, skill_file=True, extra_scripts=()):
     path = root / ".claude/skills" / directory
     (path / "scripts").mkdir(parents=True)
     if bundle:
         (path / "scripts/tool.py").write_text("print('hi')\n", encoding="utf-8")
+    for script_name in extra_scripts:
+        (path / "scripts" / script_name).write_text("print('hi')\n", encoding="utf-8")
     if skill_file:
         (path / "SKILL.md").write_text(
             SKILL.format(name=name if name is not None else directory,
@@ -115,7 +117,7 @@ def main() -> int:
     check("says why", "no SKILL.md" in result.stdout, result.stdout)
 
     print("6. regression: a .py filename in an example, not a command")
-    result = case("example block",
+    result = case("example block", bundle=False,
                   command="- failed: per-model caching in src/budget.py — grep: \"TooMany\"")
     check("exits zero", result.returncode == 0, result.stdout)
 
@@ -124,7 +126,19 @@ def main() -> int:
                   prose="The bundled check_ticket.py counts every checkbox in the body.")
     check("exits zero", result.returncode == 0, result.stdout)
 
-    print("8. the four skills in this repo are clean")
+    print("8. a bundled script no command invokes")
+    result = case("orphan", extra_scripts=("orphan.py",))
+    check("exits one", result.returncode == 1, result.stdout)
+    check("names the orphan", "scripts/orphan.py" in result.stdout, result.stdout)
+    check("says why it matters", "dead weight" in result.stdout, result.stdout)
+    check("does not flag the invoked script",
+          "tool.py: bundled" not in result.stdout, result.stdout)
+
+    print("9. an underscore-prefixed helper is exempt from the orphan rule")
+    result = case("helper", extra_scripts=("_shared.py",))
+    check("exits zero", result.returncode == 0, result.stdout)
+
+    print("10. the four skills in this repo are clean")
     result = lint(ROOT)
     check("exits zero", result.returncode == 0, result.stdout)
     summaries = [line for line in result.stdout.splitlines() if line.startswith("ok  ")]
@@ -136,7 +150,7 @@ def main() -> int:
         for item in failures:
             print(f"  - {item}")
         return 1
-    print("PASS — lint_skills.py meets every criterion in ML-001")
+    print("PASS — lint_skills.py meets every criterion in ML-001 and ML-002")
     return 0
 
 
