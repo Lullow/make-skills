@@ -7,6 +7,14 @@ A small, cherry-picked set of Claude Code skills for a good project workflow.
 | Skill | Role |
 |---|---|
 | `spec-align` *(todo)* | brainstorm -> human/machine alignment -> spec |
-| `write-ticket` *(todo)* | break a spec into tickets with testable criteria |
+| `write-ticket` | break a spec into tickets with testable criteria |
 | `ticket-done` | verification procedure before declaring a ticket done |
 | `session-handover` *(todo)* | structured tree summary + next step at compaction |
+
+## Tests
+
+```
+python3 tests/test_roundtrip.py
+```
+
+Proves `write-ticket`'s generator and `ticket-done`'s checker still agree on one ticket format.
